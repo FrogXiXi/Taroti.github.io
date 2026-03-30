@@ -332,9 +332,12 @@ body::before {
 .deck-stack[style*="pointer"] .deck-card {
   cursor: pointer;
 }
-.deck-stack[style*="pointer"] .deck-card:hover {
-  transform: translateY(-4px) !important;
-  box-shadow: 0 0 20px rgba(201, 168, 76, 0.5), 0 4px 15px rgba(0, 0, 0, 0.5);
+
+@media (hover: hover) and (pointer: fine) {
+  .deck-stack[style*="pointer"] .deck-card:hover {
+    transform: translateY(-4px) !important;
+    box-shadow: 0 0 20px rgba(201, 168, 76, 0.5), 0 4px 15px rgba(0, 0, 0, 0.5);
+  }
 }
 
 /* 扇形洗牌动画 - 各张牌在JS中设置不同角度 */
