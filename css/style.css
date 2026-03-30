@@ -299,6 +299,7 @@ body::before {
   min-height: 240px;
   margin-bottom: 32px;
   position: relative;
+  overflow: hidden;
 }
 
 .deck-stack {
@@ -655,6 +656,7 @@ body::before {
   .content-area {
     flex-direction: column;
     gap: 0;
+    align-items: center;
   }
 
   .sidebar { display: none; }
@@ -683,7 +685,8 @@ body::before {
     --card-h: 153px;
   }
 
-  .deck-area { min-height: 180px; margin-bottom: 24px; }
+  .deck-area { min-height: 180px; margin-bottom: 24px; overflow: hidden; }
+  .reading-zone { width: 100%; }
   .drawing-area { gap: 12px; }
   .drawing-title { font-size: 1rem; margin-bottom: 14px; }
   .slot-label { font-size: 0.7rem; }
