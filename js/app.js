@@ -7,30 +7,26 @@
 
   /* ===== 状态管理 ===== */
   const state = {
-    phase: 'idle',        // idle | shuffling | shuffled | cutting | cut | drawing | reading-done
-    deck: [],             // 当前牌组
-    drawnCards: [],        // 抽到的3张牌
-    drawIndex: 0,         // 当前抽到第几张
-    flippedCount: 0,      // 已翻牌数
-    animating: false       // 动画锁
+    phase: 'idle',        // idle | shuffled | cut | drawing | drawn | reading-done
+    deck: [],
+    drawnCards: [],
+    drawIndex: 0,
+    flippedCount: 0,
+    animating: false
   };
 
   /* ===== DOM 缓存 ===== */
   const $ = (sel) => document.querySelector(sel);
-  const btnShuffle  = $('#btnShuffle');
-  const btnCut      = $('#btnCut');
-  const btnStart    = $('#btnStart');
-  const btnReset    = $('#btnReset');
-  const deckStack   = $('#deckStack');
+  const btnShuffle   = $('#btnShuffle');
+  const btnCut       = $('#btnCut');
+  const btnStart     = $('#btnStart');
+  const btnReset     = $('#btnReset');
+  const deckStack    = $('#deckStack');
   const resetWrapper = $('#resetWrapper');
-  const hamburger   = $('#hamburger');
-  const mobileNav   = $('#mobileNav');
-  const panelToggle = $('#panelToggle');
-  const panelBody   = $('#panelBody');
+  const panelToggle  = $('#panelToggle');
+  const panelBody    = $('#panelBody');
 
-  /* 洗牌视觉张数（看起来足够多） */
   const VISUAL_CARD_COUNT = 35;
-  /* 静态牌堆叠放张数 */
   const STACK_COUNT = 8;
 
   /* ===== 初始化 ===== */
@@ -42,7 +38,6 @@
     });
   }
 
-  /* 预加载牌背图片 */
   function preloadCardBack() {
     return new Promise((resolve) => {
       const img = new Image();
@@ -75,21 +70,16 @@
     const a = state.animating;
     const p = state.phase;
 
-    // 洗牌：idle 或 shuffled 可点（允许重复洗牌），其它阶段不可
     btnShuffle.disabled = a || (p !== 'idle' && p !== 'shuffled');
+    btnCut.disabled     = a || (p !== 'shuffled' && p !== 'cut');
+    btnStart.disabled   = a || p !== 'cut';
 
-    // 切牌：洗牌完成或已切牌后可点（允许多次切牌）
-    btnCut.disabled = a || (p !== 'shuffled' && p !== 'cut');
-
-    // 开始占卜：切牌完成后可点
-    btnStart.disabled = a || p !== 'cut';
-
-    // 重新占卜：占卜完成后可点，否则禁用
-    btnReset.disabled = a || p !== 'reading-done';
+    // 重置按钮：三张牌全部翻开后才出现
+    resetWrapper.style.display = (state.flippedCount >= 3) ? '' : 'none';
   }
 
-  function lockUI()   { state.animating = true;  updateButtons(); }
-  function unlockUI()  { state.animating = false; updateButtons(); }
+  function lockUI()  { state.animating = true;  updateButtons(); }
+  function unlockUI() { state.animating = false; updateButtons(); }
 
   /* ===== 事件绑定 ===== */
   function bindEvents() {
@@ -98,22 +88,18 @@
     btnStart.addEventListener('click', handleStartReading);
     btnReset.addEventListener('click', handleReset);
 
-    hamburger.addEventListener('click', () => {
-      hamburger.classList.toggle('active');
-      mobileNav.classList.toggle('open');
-      hamburger.setAttribute('aria-expanded', mobileNav.classList.contains('open'));
-    });
-
-    panelToggle.addEventListener('click', () => {
-      const open = panelBody.classList.toggle('open');
-      panelToggle.setAttribute('aria-expanded', open);
-    });
+    if (panelToggle) {
+      panelToggle.addEventListener('click', () => {
+        const open = panelBody.classList.toggle('open');
+        panelToggle.setAttribute('aria-expanded', open);
+      });
+    }
 
     const btnScreenshot = $('#btnScreenshot');
     if (btnScreenshot) btnScreenshot.addEventListener('click', handleScreenshot);
   }
 
-  /* ===== 洗牌（35张扇形展开 → 收拢） ===== */
+  /* ===== 洗牌（杂乱散牌 → 收拢） ===== */
   function handleShuffle() {
     if (state.animating) return;
     lockUI();
@@ -125,19 +111,20 @@
       [state.deck[i], state.deck[j]] = [state.deck[j], state.deck[i]];
     }
 
-    // 重置放牌区
     resetSlots();
-
-    // 先清空牌堆，放入动画用的多张牌
     deckStack.innerHTML = '';
     const total = VISUAL_CARD_COUNT;
+
+    // 计算散牌范围
+    const deckArea = document.getElementById('deckArea');
+    const areaW = deckArea.offsetWidth;
+    const maxX = Math.min(areaW * 0.4, 280);
+    const maxY = 80;
 
     for (let i = 0; i < total; i++) {
       const card = document.createElement('div');
       card.className = 'deck-card';
       card.style.zIndex = i;
-      card.style.top = '0px';
-      card.style.left = '0px';
       card.style.transition = 'none';
       const img = document.createElement('img');
       img.src = CARD_BACK_IMAGE;
@@ -148,23 +135,17 @@
     }
 
     const cards = deckStack.querySelectorAll('.deck-card');
-
-    // 第一帧：强制回流
     void deckStack.offsetHeight;
 
-    // 扇形展开
+    // 杂乱散开
     requestAnimationFrame(() => {
-      const spreadAngle = 160;
-      const startAngle = -spreadAngle / 2;
-      const radius = Math.min(window.innerWidth * 0.35, 200);
-
-      cards.forEach((card, i) => {
-        card.style.transition = 'transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1)';
-        const angle = startAngle + (spreadAngle / (total - 1)) * i;
-        const offsetX = Math.sin((angle * Math.PI) / 180) * radius;
-        const offsetY = -Math.abs(Math.cos((angle * Math.PI) / 180)) * (radius * 0.25) + (radius * 0.25);
-        card.style.transform = `translateX(${offsetX}px) translateY(${offsetY}px) rotate(${angle}deg)`;
-        card.style.zIndex = i;
+      cards.forEach((card) => {
+        card.style.transition = 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)';
+        const rx = (Math.random() - 0.5) * 2 * maxX;
+        const ry = (Math.random() - 0.5) * 2 * maxY;
+        const rot = (Math.random() - 0.5) * 360;
+        card.style.transform = 'translate(' + rx + 'px, ' + ry + 'px) rotate(' + rot + 'deg)';
+        card.style.zIndex = Math.floor(Math.random() * total);
       });
     });
 
@@ -172,48 +153,62 @@
     setTimeout(() => {
       cards.forEach((card) => {
         card.style.transition = 'transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-        card.style.transform = 'translateX(0) translateY(0) rotate(0deg)';
+        card.style.transform = 'translate(0, 0) rotate(0deg)';
       });
 
       setTimeout(() => {
-        // 重建静态牌堆
         buildDeckStack();
         state.phase = 'shuffled';
         unlockUI();
       }, 550);
-    }, 1200);
+    }, 1400);
   }
 
-  /* ===== 切牌（可多次切牌） ===== */
+  /* ===== 切牌（上半部分拿起 → 放到底下） ===== */
   function handleCut() {
     if (state.animating) return;
     if (state.phase !== 'shuffled' && state.phase !== 'cut') return;
     lockUI();
 
-    const cards = deckStack.querySelectorAll('.deck-card');
-    const cutIndex = Math.floor(cards.length / 2);
+    const cards = Array.from(deckStack.querySelectorAll('.deck-card'));
+    const total = cards.length;
+    const cutIndex = Math.floor(total / 2);
 
+    // 阶段1：上半部分牌抬起并右移
     cards.forEach((card, i) => {
       if (i >= cutIndex) {
-        card.classList.add('cut-top');
-      } else {
-        card.classList.add('cut-bottom');
+        card.style.transition = 'transform 0.4s ease-out';
+        card.style.transform = 'translateY(-80px) translateX(55px)';
       }
     });
 
-    // 随机切牌位置
-    const cutPos = Math.floor(Math.random() * (state.deck.length - 10)) + 5;
-    const top = state.deck.splice(cutPos);
-    state.deck = [...top, ...state.deck];
-
+    // 阶段2：上半部分降低z-index（放到底下），下半部分升高z-index（放到上面）
     setTimeout(() => {
-      cards.forEach(c => {
-        c.classList.remove('cut-top', 'cut-bottom');
-        c.style.transform = '';
+      cards.forEach((card, i) => {
+        if (i >= cutIndex) {
+          card.style.zIndex = i - cutIndex;
+          card.style.transition = 'transform 0.4s ease-in';
+          card.style.transform = 'translateY(0) translateX(0)';
+        } else {
+          card.style.zIndex = i + (total - cutIndex);
+        }
       });
-      state.phase = 'cut';
-      unlockUI();
-    }, 800);
+
+      setTimeout(() => {
+        cards.forEach(c => {
+          c.style.transform = '';
+          c.style.transition = '';
+        });
+
+        // 数据层切牌
+        const cutPos = Math.floor(Math.random() * (state.deck.length - 10)) + 5;
+        const top = state.deck.splice(cutPos);
+        state.deck = [...top, ...state.deck];
+
+        state.phase = 'cut';
+        unlockUI();
+      }, 450);
+    }, 450);
   }
 
   /* ===== 开始占卜 ===== */
@@ -228,7 +223,7 @@
 
   function drawNextCard() {
     if (state.drawIndex >= 3) {
-      state.phase = 'reading-done';
+      state.phase = 'drawn';
       updateButtons();
       return;
     }
@@ -236,7 +231,7 @@
     lockUI();
     const cardData = state.drawnCards[state.drawIndex];
     const slotIndex = state.drawIndex;
-    const slot = $(`#slot${slotIndex}`);
+    const slot = $('#slot' + slotIndex);
     const placeholder = slot.querySelector('.card-placeholder');
 
     const rootStyles = getComputedStyle(document.documentElement);
@@ -255,12 +250,12 @@
     img.draggable = false;
     flyCard.appendChild(img);
 
-    // 起始位置
+    // 起始位置（牌堆中心）
     const deckRect = deckStack.getBoundingClientRect();
     const startX = deckRect.left + deckRect.width / 2 - cardW / 2;
     const startY = deckRect.top + deckRect.height / 2 - cardH / 2;
 
-    // 目标位置
+    // 目标位置（牌位中心）
     const slotRect = placeholder.getBoundingClientRect();
     const endX = slotRect.left;
     const endY = slotRect.top;
@@ -299,7 +294,6 @@
     const inner = document.createElement('div');
     inner.className = 'flip-card-inner';
 
-    // 牌背（默认可见）
     const front = document.createElement('div');
     front.className = 'flip-card-front';
     const frontImg = document.createElement('img');
@@ -308,7 +302,6 @@
     frontImg.draggable = false;
     front.appendChild(frontImg);
 
-    // 牌面（翻转后可见）
     const back = document.createElement('div');
     back.className = 'flip-card-back';
     const backImg = document.createElement('img');
@@ -327,35 +320,44 @@
       inner.classList.add('flipped');
       state.flippedCount++;
       flipContainer.removeEventListener('click', handler);
+
+      // 翻牌后底下显示牌名
+      const label = slot.querySelector('.slot-label');
+      if (label) label.textContent = cardData.nameCN;
+
       showInterpretation(cardData, slotIndex);
+      updateButtons();
     });
 
     slot.insertBefore(flipContainer, slot.querySelector('.slot-label'));
   }
 
-  /* ===== 牌义展示（使用栏位编号 1/2/3） ===== */
+  /* ===== 牌义展示 ===== */
   function showInterpretation(cardData, slotIndex) {
-    const posLabel = `栏位 ${slotIndex + 1}`;
+    var posLabel = '栏位 ' + (slotIndex + 1);
 
-    const html = `
-      <div class="interp-card">
-        <div class="interp-position">${posLabel} · 揭牌</div>
-        <div class="interp-name">${cardData.nameCN}（${cardData.name}）</div>
-        <div class="interp-keywords">${cardData.keywordsCN}</div>
-      </div>
-    `;
+    var html =
+      '<div class="interp-card">' +
+        '<div class="interp-position">' + posLabel + ' · 揭牌</div>' +
+        '<div class="interp-name">' + cardData.nameCN + '（' + cardData.name + '）</div>' +
+        '<div class="interp-keywords">' + cardData.keywordsCN + '</div>' +
+      '</div>';
 
-    const desktopContent = $('#interpretationContent');
-    if (desktopContent.querySelector('.interpretation-placeholder')) {
-      desktopContent.innerHTML = '';
+    var desktopContent = $('#interpretationContent');
+    if (desktopContent) {
+      if (desktopContent.querySelector('.interpretation-placeholder')) {
+        desktopContent.innerHTML = '';
+      }
+      desktopContent.insertAdjacentHTML('beforeend', html);
     }
-    desktopContent.insertAdjacentHTML('beforeend', html);
 
-    const mobileContent = $('#interpretationContentMobile');
-    if (mobileContent.querySelector('.interpretation-placeholder')) {
-      mobileContent.innerHTML = '';
+    var mobileContent = $('#interpretationContentMobile');
+    if (mobileContent) {
+      if (mobileContent.querySelector('.interpretation-placeholder')) {
+        mobileContent.innerHTML = '';
+      }
+      mobileContent.insertAdjacentHTML('beforeend', html);
     }
-    mobileContent.insertAdjacentHTML('beforeend', html);
   }
 
   /* ===== 重置 ===== */
@@ -370,19 +372,23 @@
     buildDeckStack();
     resetSlots();
 
-    $('#interpretationContent').innerHTML = '<p class="interpretation-placeholder">抽牌后将在此显示解读...</p>';
-    $('#interpretationContentMobile').innerHTML = '<p class="interpretation-placeholder">抽牌后将在此显示解读...</p>';
+    var dc = $('#interpretationContent');
+    if (dc) dc.innerHTML = '<p class="interpretation-placeholder">抽牌后将在此显示解读...</p>';
+    var mc = $('#interpretationContentMobile');
+    if (mc) mc.innerHTML = '<p class="interpretation-placeholder">抽牌后将在此显示解读...</p>';
 
     updateButtons();
   }
 
   function resetSlots() {
-    for (let i = 0; i < 3; i++) {
-      const slot = $(`#slot${i}`);
-      const existing = slot.querySelector('.placed-card');
+    for (var i = 0; i < 3; i++) {
+      var slot = $('#slot' + i);
+      var existing = slot.querySelector('.placed-card');
       if (existing) existing.remove();
-      const placeholder = slot.querySelector('.card-placeholder');
+      var placeholder = slot.querySelector('.card-placeholder');
       if (placeholder) placeholder.style.display = '';
+      var label = slot.querySelector('.slot-label');
+      if (label) label.innerHTML = '&nbsp;';
     }
   }
 
@@ -397,10 +403,10 @@
       scale: 2,
       useCORS: true,
       logging: false
-    }).then(canvas => {
-      canvas.toBlob(blob => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
+    }).then(function (canvas) {
+      canvas.toBlob(function (blob) {
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
         a.href = url;
         a.download = '塔罗占卜_' + new Date().toLocaleDateString('zh-CN').replace(/\//g, '-') + '.png';
         document.body.appendChild(a);
@@ -408,7 +414,7 @@
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
       }, 'image/png');
-    }).catch(() => {
+    }).catch(function () {
       alert('截图失败，请使用系统截图工具（Win+Shift+S）');
     });
   }

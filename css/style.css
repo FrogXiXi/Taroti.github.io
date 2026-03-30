@@ -296,10 +296,9 @@ body::before {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 240px;
+  min-height: 320px;
   margin-bottom: 32px;
   position: relative;
-  overflow: hidden;
 }
 
 .deck-stack {
@@ -580,7 +579,7 @@ body::before {
 
 /* ---------- 移动端折叠面板 ---------- */
 .mobile-panel {
-  display: none;
+  display: block;
   margin-top: 20px;
   background: rgba(26, 16, 48, 0.7);
   border: 1px solid rgba(201, 168, 76, 0.12);
@@ -625,6 +624,13 @@ body::before {
 .panel-section { margin-bottom: 16px; }
 .panel-section:last-child { margin-bottom: 0; }
 
+/* 桌面端面板自动展开 */
+@media (min-width: 768px) {
+  .mobile-panel { max-width: 600px; margin-left: auto; margin-right: auto; }
+  .panel-body { display: block; padding-top: 18px; }
+  .panel-toggle { display: none; }
+}
+
 /* ---------- 响应式 ---------- */
 
 /* 平板 */
@@ -645,9 +651,6 @@ body::before {
     opacity: 0.25;
   }
 
-  .nav-links { display: none; }
-  .hamburger { display: flex; }
-
   .navbar-inner { padding: 10px 16px; }
   .logo-text { font-size: 1rem; }
 
@@ -658,9 +661,6 @@ body::before {
     gap: 0;
     align-items: center;
   }
-
-  .sidebar { display: none; }
-  .mobile-panel { display: block; }
 
   .section-title {
     font-size: 1.1rem;
@@ -685,7 +685,7 @@ body::before {
     --card-h: 153px;
   }
 
-  .deck-area { min-height: 180px; margin-bottom: 24px; overflow: hidden; }
+  .deck-area { min-height: 250px; margin-bottom: 24px; }
   .reading-zone { width: 100%; }
   .drawing-area { gap: 12px; }
   .drawing-title { font-size: 1rem; margin-bottom: 14px; }

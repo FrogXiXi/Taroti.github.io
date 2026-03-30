@@ -26,11 +26,6 @@
         </svg>
         <span class="logo-text">里塔罗</span>
       </a>
-      <!-- 桌面端导航 -->
-      <nav class="nav-links" id="navLinks">
-        <a href="index.html" class="nav-item active">首页</a>
-        <a href="#reading-section" class="nav-item">占卜</a>
-      </nav>
       <!-- 右侧操作 -->
       <div class="nav-actions">
         <button class="btn-icon" id="btnScreenshot" title="截图分享" aria-label="截图分享">
@@ -39,16 +34,7 @@
             <circle cx="12" cy="13" r="4"/>
           </svg>
         </button>
-        <!-- 汉堡菜单（移动端） -->
-        <button class="hamburger" id="hamburger" aria-label="菜单" aria-expanded="false">
-          <span></span><span></span><span></span>
-        </button>
       </div>
-    </div>
-    <!-- 移动端导航面板 -->
-    <div class="mobile-nav" id="mobileNav">
-      <a href="index.html" class="mobile-nav-item active">首页</a>
-      <a href="#reading-section" class="mobile-nav-item">占卜</a>
     </div>
   </header>
 
@@ -59,7 +45,7 @@
       <section class="reading-zone">
         <!-- 标题 -->
         <h1 class="section-title">三牌阵占卜</h1>
-        <p class="section-hint">1. 专注于你的问题，然后洗牌并切牌。</p>
+        <p class="section-hint">专注于你的问题，然后洗牌并切牌。</p>
 
         <!-- 操作按钮 -->
         <div class="action-buttons">
@@ -84,36 +70,23 @@
             <div class="card-placeholder">
               <div class="placeholder-border"></div>
             </div>
-            <span class="slot-label">1</span>
+            <span class="slot-label">&nbsp;</span>
           </div>
           <div class="card-slot" id="slot1">
             <div class="card-placeholder">
               <div class="placeholder-border"></div>
             </div>
-            <span class="slot-label">2</span>
+            <span class="slot-label">&nbsp;</span>
           </div>
           <div class="card-slot" id="slot2">
             <div class="card-placeholder">
               <div class="placeholder-border"></div>
             </div>
-            <span class="slot-label">3</span>
+            <span class="slot-label">&nbsp;</span>
           </div>
         </div>
       </section>
 
-      <!-- 右侧侧边栏（桌面端） -->
-      <aside class="sidebar" id="sidebar">
-        <div class="sidebar-section">
-          <h3 class="sidebar-label">当前问题：</h3>
-          <textarea class="question-input" id="questionInput" placeholder="在此输入你的问题..." rows="3" maxlength="200"></textarea>
-        </div>
-        <div class="sidebar-section">
-          <h3 class="sidebar-label">牌义解读：</h3>
-          <div class="interpretation-content" id="interpretationContent">
-            <p class="interpretation-placeholder">抽牌后将在此显示解读...</p>
-          </div>
-        </div>
-      </aside>
     </div>
 
     <!-- 移动端折叠面板 -->
@@ -137,12 +110,11 @@
         </div>
       </div>
     </div>
+    <!-- 重置按钮 -->
+    <div class="reset-wrapper" id="resetWrapper" style="display:none">
+      <button class="btn btn-reset" id="btnReset">重新占卜</button>
+    </div>
   </main>
-
-  <!-- ===== 重置按钮（始终可见，未完成前禁用） ===== -->
-  <div class="reset-wrapper" id="resetWrapper">
-    <button class="btn btn-reset" id="btnReset" disabled>重新占卜</button>
-  </div>
 
   <!-- JS -->
   <script src="js/tarot-data.js"></script>
