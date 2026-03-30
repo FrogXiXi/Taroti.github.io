@@ -239,14 +239,22 @@
         var topPart = state.deck.splice(cutPos);
         state.deck = topPart.concat(state.deck);
 
-        // 清除动画残留样式，不重建DOM避免抽搐
+        // 清除transform，然后平滑调整top/left到新z-index对应的位置
         cards.forEach(function (c) {
-          c.style.transition = '';
           c.style.transform = '';
+          var z = parseInt(c.style.zIndex) || 0;
+          c.style.transition = 'top 0.3s ease, left 0.3s ease';
+          c.style.top = -(z * 2) + 'px';
+          c.style.left = (z * 1) + 'px';
         });
 
-        state.phase = 'cut';
-        unlockUI();
+        setTimeout(function () {
+          cards.forEach(function (c) {
+            c.style.transition = '';
+          });
+          state.phase = 'cut';
+          unlockUI();
+        }, 350);
       }, 450);
     }, 500);
   }
