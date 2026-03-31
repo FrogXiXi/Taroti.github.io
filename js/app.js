@@ -247,9 +247,6 @@
       // 初始：全部叠在顶部正中（牌堆位置）
       card.style.transform = 'rotate(0deg) translateY(-' + radius + 'px)';
       card.style.transition = 'none';
-      // z-index：按角度离顶部的距离，越远越高（防止竖屏相邻牌遮挡点击区）
-      var angleDist = targetAngle <= 180 ? targetAngle : 360 - targetAngle;
-      card.style.zIndex = Math.round(angleDist) + 1;
 
       var img = document.createElement('img');
       img.src = CARD_BACK_IMAGE;
@@ -265,6 +262,8 @@
       card.addEventListener('click', handleWheelCardClick);
       wheelRing.appendChild(card);
     }
+
+    updateWheelCardDepth();
 
     // 从顶部正中（牌堆位置）顺时针展开：每张牌依次延迟飞到目标位置
     requestAnimationFrame(function () {
@@ -296,6 +295,21 @@
     var cardH = parseInt(rootStyles.getPropertyValue('--card-h'));
     // 确保顶部牌（0°）完全在视口内：vh - radius - cardH/2 >= 5
     return Math.floor(vh - cardH / 2 - 5);
+  }
+
+  function normalizeAngle(angle) {
+    var normalized = angle % 360;
+    return normalized < 0 ? normalized + 360 : normalized;
+  }
+
+  function updateWheelCardDepth() {
+    var allCards = wheelRing.querySelectorAll('.wheel-card');
+    for (var i = 0; i < allCards.length; i++) {
+      var card = allCards[i];
+      var currentAngle = normalizeAngle(parseFloat(card.dataset.angle) + state.wheelAngle);
+      var angleDist = currentAngle <= 180 ? currentAngle : 360 - currentAngle;
+      card.style.zIndex = String(181 - Math.round(angleDist));
+    }
   }
 
   /* ===== 轮盘旋转事件（无缩放） ===== */
@@ -378,6 +392,7 @@
   function applyWheelTransform() {
     wheelRing.style.transition = 'none';
     wheelRing.style.transform = 'rotate(' + state.wheelAngle + 'deg)';
+    updateWheelCardDepth();
   }
 
   /* ===== 点击轮盘牌抽牌 ===== */
